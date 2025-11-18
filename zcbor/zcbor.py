@@ -386,6 +386,8 @@ class CddlParser:
         # If the type has a ".bits <group_name>", this will contain <group_name> which can be looked
         # up in my_control_groups.
         self.bits = None
+        # Whether this element should be unwrapped (prefixed with ~ in CDDL).
+        self.unwrap = False
         # The "type" of the element. This follows the CBOR types loosely, but are more related to
         # CDDL concepts. The possible types are "INT", "UINT", "NINT", "FLOAT", "BSTR", "TSTR",
         # "BOOL", "NIL", "UNDEF", "LIST", "MAP","GROUP", "UNION" and "OTHER". "OTHER" represents a
@@ -676,6 +678,29 @@ class CddlParser:
         self._flatten()
         if self.type == "OTHER" and self.is_socket and self.value not in self.my_types:
             return []
+        
+        # Handle unwrapping: if this element is marked for unwrapping and references a GROUP,
+        # expand the group's children into the parent container
+        if self.unwrap and self.type == "OTHER" and self.value in self.my_types:
+            referenced_type = self.my_types[self.value]
+            if referenced_type.type == "GROUP":
+                # Return the children of the group, applying quantities from this element
+                result = []
+                for child in referenced_type.value:
+                    # Create a copy of the child to avoid modifying the original
+                    unwrapped_child = type(self)(**self.init_kwargs())
+                    unwrapped_child.__dict__.update(child.__dict__.copy())
+                    # Apply the quantity from the unwrapping element
+                    unwrapped_child.min_qty *= self.min_qty
+                    unwrapped_child.max_qty *= self.max_qty
+                    result.append(unwrapped_child)
+                return result
+            else:
+                raise CddlParsingError(
+                    f"Unwrapping operator ~ can only be applied to groups, "
+                    f"but '{self.value}' is of type '{referenced_type.type}'"
+                )
+        
         if (
             self.type in ["GROUP", "UNION"]
             and (len(self.value) == 1)
@@ -710,6 +735,11 @@ class CddlParser:
 
         self.type = new_type
         self.set_value(value_generator)
+
+    def type_and_value_unwrap(self, new_type, value_generator):
+        """Set the self.type and self.value of this element, marking it for unwrapping."""
+        self.type_and_value(new_type, value_generator)
+        self.unwrap = True
 
     def set_value(self, value_generator):
         """Set the value of this element.
@@ -1099,6 +1129,10 @@ class CddlParser:
             (r"true(?!\w)", lambda m_self, _: m_self.type_and_value("BOOL", lambda: True)),
             (r"false(?!\w)", lambda m_self, _: m_self.type_and_value("BOOL", lambda: False)),
             (r"#6\.(?P<item>\d+)", self_type.add_tag),
+            (
+                r"~(?P<item>\$?\$?[\w-]+)",
+                lambda m_self, other_str: m_self.type_and_value_unwrap("OTHER", lambda: other_str),
+            ),
             (
                 r"(\$?\$?[\w-]+)",
                 lambda m_self, other_str: m_self.type_and_value("OTHER", lambda: other_str),

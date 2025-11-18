@@ -1,0 +1,26 @@
+; Test cases for unwrapping operator ~
+
+; Basic unwrapping of a group into a list
+Foo = (a: 1, b: 2)
+Bar = [~Foo, c: 3]
+
+; Unwrapping of a group into a map
+PersonFields = (
+    "name" => tstr,
+    "age" => uint
+)
+Employee = {~PersonFields, "id" => uint}
+
+; Multiple unwrapping
+Point2D = (x: int, y: int)
+Point3D = [~Point2D, z: int]
+
+; Nested unwrapping
+Inner = (i1: 1, i2: 2)
+Middle = (~Inner, m1: 3)
+Outer = [~Middle, o1: 4]
+
+; Mixed unwrapped and non-unwrapped
+Data = (d1: uint, d2: tstr)
+Container = [~Data, Data, extra: bool]
+
