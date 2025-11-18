@@ -383,7 +383,6 @@ The following is a list of limitations and missing features:
  * Generated code does not support unordered maps.
  * Using `&()` to turn groups into choices (unions). `&()` is supported when used with `.bits`.
  * Representation Types (`#x.y`), except for tags (`#6.y(foo)`) which are supported.
- * Unwrapping (`~`)
  * The control operators `.regexp`, `.ne`, `.default`, and `.within` from RFC8610.
  * The control operators `.sdnv`, `.sdnvseq`, and `.oid` from RFC9090.
  * The control operators `.plus`, `.cat`, `.det`, `.abnf`, `.abnfb`, and `.feature` from RFC9165.
