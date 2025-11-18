@@ -679,12 +679,12 @@ class CddlParser:
         if self.type == "OTHER" and self.is_socket and self.value not in self.my_types:
             return []
         
-        # Handle unwrapping: if this element is marked for unwrapping and references a GROUP,
-        # expand the group's children into the parent container
+        # Handle unwrapping: if this element is marked for unwrapping and references a GROUP or MAP,
+        # expand the group/map's children into the parent container
         if self.unwrap and self.type == "OTHER" and self.value in self.my_types:
             referenced_type = self.my_types[self.value]
-            if referenced_type.type == "GROUP":
-                # Return the children of the group, applying quantities from this element
+            if referenced_type.type in ["GROUP", "MAP"]:
+                # Return the children of the group/map, applying quantities from this element
                 result = []
                 for child in referenced_type.value:
                     # Create a copy of the child to avoid modifying the original
@@ -697,7 +697,7 @@ class CddlParser:
                 return result
             else:
                 raise CddlParsingError(
-                    f"Unwrapping operator ~ can only be applied to groups, "
+                    f"Unwrapping operator ~ can only be applied to groups or maps, "
                     f"but '{self.value}' is of type '{referenced_type.type}'"
                 )
         

@@ -11,6 +11,13 @@ PersonFields = (
 )
 Employee = {~PersonFields, "id" => uint}
 
+; Unwrapping of a map into another map
+BaseMap = {
+    "x" => uint,
+    "y" => uint
+}
+ExtendedMap = {~BaseMap, "z" => uint}
+
 ; Multiple unwrapping
 Point2D = (x: int, y: int)
 Point3D = [~Point2D, z: int]

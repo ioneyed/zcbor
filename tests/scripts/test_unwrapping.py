@@ -53,6 +53,25 @@ class TestUnwrapping(TestCase):
         self.assertIsNotNone(employee.value[1].key)
         self.assertIsNotNone(employee.value[2].key)
 
+    def test_unwrapping_map_into_map(self):
+        """Test unwrapping of a map into another map"""
+        cddl = """
+        BaseMap = {
+            "x" => uint,
+            "y" => uint
+        }
+        ExtendedMap = {~BaseMap, "z" => uint}
+        """
+        parser = CddlXcoder.from_cddl(cddl_string=cddl, default_max_qty=10)
+        
+        extended = parser.my_types['ExtendedMap']
+        self.assertEqual(extended.type, 'MAP')
+        self.assertEqual(len(extended.value), 3)
+        
+        # Check that all keys are present
+        keys = [child.key.value for child in extended.value if child.key]
+        self.assertEqual(sorted(keys), ['x', 'y', 'z'])
+
     def test_nested_unwrapping(self):
         """Test nested unwrapping across multiple levels"""
         cddl = """
@@ -71,7 +90,7 @@ class TestUnwrapping(TestCase):
         self.assertEqual(labels, ['i1', 'i2', 'm1', 'o1'])
 
     def test_unwrap_non_group_error(self):
-        """Test that unwrapping a non-group type raises an error"""
+        """Test that unwrapping a non-group/non-map type raises an error"""
         cddl = """
         NotAGroup = [1, 2, 3]
         Bar = [~NotAGroup, c: 3]
@@ -79,7 +98,7 @@ class TestUnwrapping(TestCase):
         with self.assertRaises(CddlParsingError) as context:
             CddlXcoder.from_cddl(cddl_string=cddl, default_max_qty=10)
         
-        self.assertIn("can only be applied to groups", str(context.exception))
+        self.assertIn("can only be applied to groups or maps", str(context.exception))
 
     def test_mixed_unwrapped_and_regular(self):
         """Test mixing unwrapped and regular group references"""
